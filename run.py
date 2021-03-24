@@ -15,7 +15,7 @@ def _print(message, level='info'):
     if level == 'position':
         print(f'{dt.utcnow()} - {message}.', end='\r')
     else:
-        print(f'{dt.utcnow()} - {level.upper()} - {message.capitalize()}.')
+        print(f'{dt.utcnow()} - {level.upper()} - {message}.')
 
 
 def scale_qtys(x, n):
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     print('\nUSE AT YOUR OWN RISK!!!\n')
     time.sleep(1)
 
-    _print('opening session')
+    _print('Opening session')
     s = HTTP(
         api_key=config.API_KEY,
         api_secret=config.PRIVATE_KEY,
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     except InvalidRequestError as e:
         raise PermissionError('API key is invalid.')
     else:
-        _print('authenticated sanity check passed')
+        _print('Authenticated sanity check passed')
 
     # Set leverage to cross.
     try:
@@ -70,9 +70,9 @@ if __name__ == '__main__':
         )
     except InvalidRequestError as e:
         if e.status_code == 34015:
-            _print('margin is already set to cross')
+            _print('Margin is already set to cross')
     else:
-        _print('forced cross margin')
+        _print('Forced cross margin')
 
     print('\n------------------------------\n')
 
@@ -90,21 +90,21 @@ if __name__ == '__main__':
         )
 
         # Grab the last price.
-        _print('checking last price')
+        _print('Checking last price')
         last = float(s.latest_information_for_symbol(
             symbol=config.SYMBOL
         )['result'][0]['last_price'])
         price_range = config.RANGE * last
 
         # Create order price span.
-        _print('generating order prices')
+        _print('Generating order prices')
         prices = np.linspace(
             last - price_range/2, last + price_range/2, config.NUM_ORDERS * 2
         )
         tp_dp = config.TP_DIST * last
 
         # Scale quantity additively (1x, 2x, 3x, 4x).
-        _print('generating order quantities')
+        _print('Generating order quantities')
         balance_in_usd = float(s.get_wallet_balance(
             coin=config.COIN
         )['result'][config.COIN]['available_balance']) * last
@@ -122,11 +122,11 @@ if __name__ == '__main__':
                 'time_in_force': 'GoodTillCancel',
             } for k in range(len(qtys))
         ]
-        _print('submitting orders')
+        _print('Submitting orders')
         responses = s.place_active_order_bulk(orders=orders)
 
         # Let's create an ID list of buys and sells as a dict.
-        _print('orders submitted successfully')
+        _print('Orders submitted successfully')
         order_ids = {
             'Buy': [i['result']['order_id']
                     for i in responses if i['result']['side'] == 'Buy'],
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         while True:
 
             # Await position.
-            _print('awaiting position')
+            _print('Awaiting position')
             while not abs(s.my_position(
                     symbol=config.SYMBOL
             )['result']['size']):
@@ -162,7 +162,7 @@ if __name__ == '__main__':
                 } for i in order_ids['Buy']]
             else:
                 # Position was closed immediately for some reason. Restart.
-                _print('position closed unexpectedly—resetting')
+                _print('Position closed unexpectedly—resetting')
                 break
             s.cancel_active_order_bulk(
                 orders=to_cancel
@@ -199,12 +199,12 @@ if __name__ == '__main__':
             while p['size']:
 
                 # Get the size with sign based on side.
-                signed_size = p['size'] if p['side'] == 'Buy' else -p['size']
+                sign = p['size'] if p['side'] == 'Buy' else -p['size']
                 pnl_sign = '+' if float(p['unrealised_pnl']) > 0 else '-'
 
                 # Show status.
                 _print(
-                    f'Size: {signed_size} ({p["effective_leverage"]}x), '
+                    f'Size: {sign} ({float(p["effective_leverage"]):.2f}x), '
                     f'Entry: {float(p["entry_price"]):.2f}, '
                     f'Balance: {float(p["wallet_balance"]):.8f}, '
                     f'PNL: {pnl_sign}{abs(float(p["unrealised_pnl"])):.8f}',
@@ -228,16 +228,17 @@ if __name__ == '__main__':
                     curr_size = p['size']
 
             # Position has closed—get PNL information.
-            print(' ' * 101, end='\r')
+            print(' ' * 120, end='\r')
             pnl_r = s.closed_profit_and_loss(
                 symbol=config.SYMBOL
             )['result']['data'][0]
 
             # Store PNL data as string.
-            pos = f'{pnl_r["side"]} {pnl_r["qty"]}'
+            side = 'Buy' if pnl_r['side'].lower() == 'sell' else 'Sell'
+            pos = f'{side} {pnl_r["qty"]}'
             prc = f'{pnl_r["avg_entry_price"]} -> {pnl_r["avg_exit_price"]}'
 
             # Display PNL info.
-            _print(f'position closed successfully—{pos} ({prc})')
+            _print(f'Position closed successfully: {pos} ({prc})')
             print('\n------------------------------\n')
             break

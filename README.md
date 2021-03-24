@@ -1,4 +1,4 @@
-# bybit-market-maker
+# bybit-market-maker-v2
 A very primitive Python-based market maker bot for Bybit, meant to be used a sample. Users can fork this repository and customize their own algorithms. Uses the [`pybit`](https://github.com/verata-veritatis/pybit) module.
 
 [![Python 3.6](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8-blue.svg)](https://www.python.org/downloads/)
@@ -17,7 +17,7 @@ Next, clone or download this repository and extract. Modify `config.py` to your 
 - If a single side of orders begins to fill, the bot cancels the other side of orders and places a take-profit at a user-defined distance away from the entry price.
 - A stop-loss can be set at a distance that is also user-defined.
 - If the position is closed, whether by close orders or stop loss, new long and short orders are placed and the cycle continues.
-- This strategy has little-to-no risk management. If all orders on a given side fill and the price continues in that direction, there is a liqiudation risk.
+- This strategy has little-to-no risk management and is meant to be used by the user as a "starting point". By default, a pretty distant stop-loss is used. It hurts.
 
 ## Disclaimer
 *This project is still in the early stages of development. Please refrain from using the bot on livenet until it is stable!*
